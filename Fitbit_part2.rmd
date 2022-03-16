@@ -1,0 +1,122 @@
+---
+title: "Fitbit_part2"
+author: "Litta Rizki A"
+date: "3/14/2022"
+output:
+  html_document:
+    theme: cerulean
+---
+
+# PLOTTING
+
+This section will concentrate on further visualization and a deeper dive into the data. We've already manipulated the data into the correct data type and subset our required data for plotting in the previous section.
+
+The following were the subset data from the previous section:
+
+* PerDay (the total of steps, distance, and calories grouped by day dated)
+* PerUser (the total of steps, distance, and calories grouped by individual user Id)
+* DailyUsage (the total of minute usage based on day dated)
+* User Usage (the total of minute usage based on individual Id)
+
+so let's begin shall we ?
+
+```{r, include=FALSE}
+library(tidyverse)
+library(RCurl)
+library(skimr)
+library(lubridate)
+library(readr)
+
+dailydata <- read_csv("dailyActivity_merged.csv")
+dailydata$ActivityDate <- mdy(dailydata$ActivityDate)
+dailydata$Id <- as.character(dailydata$Id)
+PerDay <- dailydata %>% count(ActivityDate, sort = T)
+  
+names(PerDay)[2] <- 'User_perday'
+
+PerDay <- dailydata %>% group_by(ActivityDate) %>%
+  summarise(total_dailySteps = sum(TotalSteps)
+            ,total_dailydistance = sum(TotalDistance)
+            ,total_dailycalories = sum(Calories)
+            ,VeryActive = sum(VeryActiveMinutes)
+            ,FairlyActive = sum(FairlyActiveMinutes)
+            ,LightlyActive = sum(LightlyActiveMinutes))
+PerUser <- dailydata %>% group_by(Id) %>%
+  summarise(UserSteps = sum(TotalSteps)
+            ,UserDistance = sum(TotalDistance)
+            ,UserCalories = sum(Calories))
+MinutesUsage <- dailydata %>% select(Id, ActivityDate, VeryActiveMinutes,
+                                     FairlyActiveMinutes, LightlyActiveMinutes)
+UsersUsage <- MinutesUsage %>% group_by(ActivityDate) %>%
+  summarise(VeryActive = sum(VeryActiveMinutes),FairlyActive = sum(FairlyActiveMinutes)
+            ,LightlyActive = sum(LightlyActiveMinutes))
+DailyUsage <- MinutesUsage %>% group_by(Id) %>% 
+  summarise(VeryActive = sum(VeryActiveMinutes),FairlyActive = sum(FairlyActiveMinutes)
+            ,LightlyActive = sum(LightlyActiveMinutes))
+```
+## Main Data Plotting
+```{r, fig.width=12, fig.height=6}
+ggplot(data = dailydata, aes(ActivityDate, TotalSteps, color = Id)) + 
+  geom_line(size = 1) + ggtitle("Daily Total Steps per Id") + 
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5)) + 
+  facet_wrap(~Id)
+
+ggplot(data = dailydata, aes(ActivityDate, TotalDistance, color = Id)) + 
+  geom_line(size = 1) + ggtitle("Daily Total Distances per Id") +  
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5)) + 
+  facet_wrap(~ Id)
+
+ggplot(data = dailydata, aes(ActivityDate, Calories, color = Id)) + 
+  geom_line(size = 1) + ggtitle("Daily Total Calories per Id") + 
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5)) + 
+  facet_wrap(~ Id)
+```
+
+## Subset Data Plotting
+
+### PerDay Plot
+```{r, fig.width=12, fig.height=3}
+ggplot(PerDay, aes(x= ActivityDate, y = total_dailySteps)) + geom_line(size = 1, color = 'orange')
+ggplot(PerDay, aes(x= ActivityDate, y = total_dailydistance)) + geom_line(size = 1, color = 'blue')
+ggplot(PerDay, aes(x= ActivityDate, y = total_dailycalories)) + geom_line(size = 1, color = 'green')
+```
+
+### Minute Usage Plot
+```{r, fig.width= 12, fig.height=6}
+ggplot(MinutesUsage, aes(ActivityDate, VeryActiveMinutes, color = Id)) +
+  geom_line(size = 1) + ggtitle("Daily Total Very Active Minutes per Id") +  
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5)) +
+  facet_wrap(~Id)
+
+ggplot(MinutesUsage, aes(ActivityDate, FairlyActiveMinutes, color = Id)) +
+  geom_line(size = 1) + ggtitle("Daily Total Fairly Active Minutes per Id") + 
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5)) +
+  facet_wrap(~Id)
+
+ggplot(MinutesUsage, aes(ActivityDate, LightlyActiveMinutes, color = Id)) +
+  geom_line(size = 1) + ggtitle("Daily Lightly Active Minutes per Id") +  
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5)) +
+  facet_wrap(~Id)
+```
+
+I tried to combine all 3 variable in minute usage using boxplot and this is what I got.
+
+```{r, fig.width= 6, fig.height= 6}
+ggplot(MinutesUsage, aes(ActivityDate)) +
+  geom_boxplot(aes(y = VeryActiveMinutes, colour = "VeryActive")) +
+  geom_boxplot(aes(y = FairlyActiveMinutes, colour = "FairlyActive")) +
+  geom_boxplot(aes(y = LightlyActiveMinutes, colour = "LightlyActive")) +
+  ggtitle("Minute Usage Within 3 Variables") +  
+  theme(legend.position = "none", 
+        plot.title = element_text(size = 20, face = "bold", hjust = 0.5))
+```
+
+I think that's the end of this series; I'm delighted because I'm started to feel more at ease with R. In the following series, I'll attempt to interpret the data using the plot that we created and begin to apply regression based on the type of case study we want to employ with this data.
+
+### To Be Continued
